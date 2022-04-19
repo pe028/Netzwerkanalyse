@@ -1,0 +1,326 @@
+---
+title: "226305 Dyaden und Triadenzensus"
+author: "Swaran Sandhu | sandhu@hdm-stuttgart.de"
+date: "Sommersemester 2022"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+subtitle: Analyse des Beziehungsnetzwerks eines Semesters
+---
+
+### Dyaden und Reziprozität
+
+Dyaden sind wichtige Bausteine für Netzwerke. Bei gerichteten Netzwerken
+lässt sich hier das Maß der Reziprozität berechnen.
+
+```{r Netzwerk einlesenk, fig.height=6, fig.width=10, message=FALSE, warning=FALSE, paged.print=TRUE}
+
+# Wir erstellen ein vereinfachtes Gesamtnetzwerk
+library(igraph)
+el <- read.csv("https://raw.githubusercontent.com/hdm-crpr/226305/master/data/crpr2/edges.csv", header=T, as.is=T, sep = ",")
+nodes <- read.csv("https://raw.githubusercontent.com/hdm-crpr/226305/master/data/crpr2/nodes.csv", header=T, as.is=T, sep = ",")
+edgematrix <-as.matrix(el)
+s <- graph_from_data_frame(d=edgematrix, vertices=nodes, directed=T)
+
+# simplifiziertes Netzwerk erstellen
+ss <- delete_edge_attr(s, "relation")
+ss <- delete_edge_attr(s, "complicated")
+s_sim <- simplify(ss,edge.attr.comb=list(weight="sum"))
+is_simple(s_sim)
+
+```
+
+```{r Teilnetzwerke erstellen}
+
+# Teilnetzwerke
+work <- subgraph.edges(s, E(s)[relation==1]) 
+help <- subgraph.edges(s, E(s)[relation==2])
+love <- subgraph.edges(s, E(s)[relation==3])
+
+# simplizifieren
+
+work <- delete_edge_attr(work, "relation")
+work <- delete_edge_attr(work, "complicated")
+
+help <- delete_edge_attr(help, "relation")
+help <- delete_edge_attr(help, "complicated")
+
+love <- delete_edge_attr(love, "relation")
+
+is_simple(work)
+w_sim <- simplify(work,edge.attr.comb=list(weight="sum"))
+is_simple(w_sim)
+w_sim
+
+is_simple(help)
+h_sim <- simplify(help,edge.attr.comb=list(weight="sum"))
+is_simple(h_sim)
+h_sim
+
+
+```
+
+```{r Dyaden Zensus}
+# Durchführung des Dyadenzensus
+dyad_census(s_sim)
+
+# Ausgabe der dyadischen Beziehungen nach dem MAN-Schema
+# M = Mutal (reziprok)
+# A = Asymmetrical (einseitig gerichtet)
+# N = Null (keine Beziehung)
+
+# Berechnung der Reziprozität
+
+reciprocity(s_sim, mode="ratio")
+# Der berechnete Wert gibt das Verhältnis von reziproken Beziehungen zu normalen Beziehungen an, in diesem Fall sind 26,08% der Beziehungen im Netzwerk reziprok.
+
+# Genauere Analyse der reziproken Beziehungen
+# Der Befehl which_mutual gibt genau an, bei welchen Knoten es sich um eine reziproke Beziehung handelt.
+
+m <- which_mutual(s_sim, eids = E(s_sim))
+m
+
+# Wir schreiben jetzt die Werte als Edge-Attribute in die Edgelist
+E(s_sim)$reciprocity <- m
+edge.attributes(s_sim)
+
+# Wir müssen jetzt noch die Werte der Edge-Attribute in der Spalte "reciprocity" in logische Operatoren umwandeln:
+
+E(s_sim)$reciprocity  <- as.numeric(E(s_sim)$reciprocity)
+edge.attributes(s_sim)$reciprocity
+
+# Plot der reziproken Beziehungen
+plot(s_sim, 
+     asp=0,
+     layout = layout_with_kk, 
+     edge.arrow.mode=3,
+     edge.arror.size=.2,
+     edge.curved=.2,
+     edge.curved=curve_multiple(s_sim),
+     vertex.color=NA,
+     vertex.frame.color=NA,
+     #edge.width=E(s_sim)$weight/2, 
+     edge.color=c("red", "NA")[(E(s_sim)$reciprocity=="0")+1],
+     main="vereinfachtes Gesamtnetzwerk", 
+     sub="Reziproke Beziehungen in rot"
+     )
+
+```
+
+**Dyaden: Vergleich zweier Teilnetzwerke auf Reziprozität**
+
+```{r Dyadenzensus: Vergleich zweier Netzwerke}
+
+# Anmerkung: Das Beispiel verwendet die zuvor erstellen Teilnetzwerke h_sim und w_sim. Diese Chunks müssen zuvor aktiviert werden.
+
+# Wir wollen herausfinden, ob die Reziprozität bei dem Hilfs- oder Zusammenarbeitsnetzwerk höher ist. Dazu müssen wir mit den zuvor erstellten Teilnetzwerken arbeiten und diese vergleichen. Hierzu passen wir die Skripte aus Kapitel 4a einfach für die beiden Teilnetzwerke an.
+
+# A Teilnetzwerk help (Hilfestellung)
+
+# Durchführung des Dyadenzensus
+dyad_census(h_sim)
+
+# Ausgabe der dyadischen Beziehungen nach dem MAN-Schema
+# M = Mutal (reziprok)
+# A = Asymmetrical (einseitig gerichtet)
+# N = Null (keine Beziehung)
+
+# Berechnung der Reziprozität
+reciprocity(h_sim, mode="ratio")
+# Der berechnete Wert gibt das Verhältnis von reziproken Beziehungen zu normalen Beziehungen an, in diesem Fall sind 26,08% der Beziehungen im Netzwerk reziprok.
+
+# Genauere Analyse der reziproken Beziehungen
+# Der Befehl which_mutual gibt genau an, bei welchen Knoten es sich um eine reziproke Beziehung handelt.
+
+mh <- which_mutual(h_sim, eids = E(h_sim))
+mh
+
+# Wir schreiben jetzt die Werte als Edge-Attribute in die Edgelist
+E(h_sim)$reciprocity <- mh
+
+# Wir müssen jetzt noch die Werte der Edge-Attribute in der Spalte "reciprocity" in logische Operatoren umwandeln:
+E(h_sim)$reciprocity  <- as.numeric(E(h_sim)$reciprocity)
+
+# B Teilnetzwerk work (Zusammenarbeit)
+
+# Durchführung des Dyadenzensus
+dyad_census(w_sim)
+
+# Berechnung der Reziprozität
+reciprocity(w_sim, mode="ratio")
+mw <- which_mutual(w_sim, eids = E(w_sim))
+mw
+
+# Wir schreiben jetzt die Werte als Edge-Attribute in die Edgelist
+E(w_sim)$reciprocity <- mw
+E(w_sim)$reciprocity  <- as.numeric(E(w_sim)$reciprocity)
+
+
+# direkter Vergleich der Reziprozität der beiden Teilnetzwerke visualisieren
+par(mfrow=c(1,2), mar=c(0,0,2,0))
+
+plot(h_sim, 
+     layout = layout_in_circle, 
+     edge.arrow.size=0.4,
+     vertex.color=NA,
+     edge.width=E(h_sim)$weight, 
+     edge.color=c("red", "NA")[(E(h_sim)$reciprocity=="0")+1],
+     main="Hilfsnetzwerk (15,38% reziprok)", 
+     sub="Reziproke Beziehungen in rot"
+     )
+
+plot(w_sim, 
+     layout = layout_in_circle, 
+     edge.arrow.size=0.4,
+     vertex.color=NA,
+     edge.width=E(w_sim)$weight, 
+     edge.color=c("red", "NA")[(E(w_sim)$reciprocity=="0")+1],
+     main="Zusammenarbeitsnetzwerk (31,57% reziprok)", 
+     sub="Reziproke Beziehungen in rot"
+     )
+
+par(mfrow=c(1,1), mar=c(0,0,2,0))
+
+# Die Analyse zeigt, dass die Beziehungen im Zusammenarbeitsnetzwerk doppelt so häufig reziprok sind, wie die Beziehungen in der Ratsuche. 
+
+```
+
+### Triaden
+
+**Triadenzensus** Der Triadenzensus ist ein etabliertes Instrument, um
+die Zusammensetzung von Netzwerken zu analysieren und zu vergleichen.
+
+```{r Triadenzensus allgemein}
+
+#  Der Zensus folgt dabei dem abgewandelten M-A-N Schema in der Beschreibung und liefert die Ergebnisse von 16 Triadentypen:
+
+# Die Reihenfolge der Ausgabe lässt sich über den Befehl ?triad_census festlegen.
+?triad_census
+# Hier werden 16 Triadentypen numerisch aufsteigend abgetragen.
+
+# Übersicht über Triaden in einem Netzwerk
+triad_census(s_sim)
+
+```
+
+```{r Triadenstrukturen / Motifs}
+
+# Mit dem Befehl motifs lassen sich spezifische Triadentypen anzeigen:
+# Das numerische Argument legt fest, wie viele Verbindungen untersucht werden sollen.
+
+motifs(s_sim, size=3)
+count_motifs(s_sim, size=3)
+
+# Die Anzahl der unterschiedlichen motifs entspricht grob dem Triadenzensus.
+# Der Gesamtwert gibt alle triadischen Verbindungen in einem Netzwerk an.
+
+```
+
+In dem Netzwerk s_sim sind 383 triadische Beziehungen angelegt. Achtung:
+die Anzahl der Cliquen unterscheidet sich in den Teilnetzwerken!
+
+### Cliquen
+
+Cliquen entsprechen der Triade 300, d.h. einer komplett reziproken
+Struktur (A\<-\>B\<-\>C,A\<-\>C).
+
+```{r Triadenstruktur: Cliquen}
+
+# Zählt die Cliquen im Netzwerk
+clique_num(s_sim)
+
+# listet die Cliquen im Netzwerk auf
+lc <- largest_cliques(s_sim)
+lc
+
+# Umwandlung für Visualisierung
+V(s_sim)$label <- V(s_sim)$name
+s_lc <- subgraph(s_sim, lc[[1]])
+
+plot(s_lc, 
+     layout=layout.fruchterman.reingold, 
+     vertex.color="gold", 
+     edge.arrow.size = 0.5, 
+     edge.color = "gray80",
+     main = "Größte Clique im CR/PR Netzwerk")
+```
+
+# Übungsaufgabe Dyaden und Triaden
+
+Datenquelle:
+<https://jtr13.github.io/cc21fall2/network-visualization-in-r.html>
+
+## Starwars Netzwerk
+
+Das Netzwerk bezieht sich auf die Interaktionen der Charaktere aus Star
+Wars IV - A new hope.
+
+```{r Netzwerk einlesen}
+
+library(igraph)
+
+sw_nodes <- read.csv("https://raw.githubusercontent.com/pablobarbera/data-science-workshop/master/sna/data/star-wars-network-nodes.csv")
+head(sw_nodes)
+
+sw_edges <- read.csv("https://raw.githubusercontent.com/pablobarbera/data-science-workshop/master/sna/data/star-wars-network-edges.csv")
+head(sw_edges)
+
+edgematrix <-as.matrix(sw_edges)
+sw <- graph_from_data_frame(d=edgematrix, vertices=sw_nodes, directed=T)
+
+sw
+
+plot(sw,
+     asp=0,
+     layout=layout_with_kk,
+     main = "Starwars")
+
+```
+
+# Aufgaben
+
+## Dyadenzensus
+```{r Dyadenzensus: Vergleich zweier Netzwerke}
+
+# Durchführung des Dyadenzensus
+sw
+dyad_census(sw)
+
+```
+
+### Reziprozität
+
+```{r Dyadenzensus: Vergleich zweier Netzwerke}
+### Reziprozität
+sw
+mh <- which_mutual(sw,  eids = E(sw))
+mh
+```
+
+```{r Triadenzensus: Vergleich dreier Netzwerke}
+## Triadenzensus
+sw
+triad_census(sw)
+
+```
+
+```{r Triadenstruktur: Cliquen}
+## größte Clique
+sw
+lc <- largest_cliques(sw)
+lc
+
+# Umwandlung für Visualisierung
+V(sw)$label <- V(sw)$name
+s_lc <- subgraph(sw, lc[[1]])
+
+plot(s_lc, 
+     layout=layout.fruchterman.reingold, 
+     vertex.color="gold", 
+     edge.arrow.size = 0.5, 
+     edge.color = "gray80",
+     main = "Größte Clique im Star Wars Netzwerk")
+```
