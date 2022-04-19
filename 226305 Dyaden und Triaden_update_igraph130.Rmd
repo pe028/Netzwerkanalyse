@@ -300,12 +300,16 @@ mh <- which_mutual(sw,  eids = E(sw))
 mh
 ```
 
+## Triadenzensus
+
 ```{r Triadenzensus: Vergleich dreier Netzwerke}
 ## Triadenzensus
 sw
 triad_census(sw)
 
 ```
+
+## größte Clique
 
 ```{r Triadenstruktur: Cliquen}
 ## größte Clique
