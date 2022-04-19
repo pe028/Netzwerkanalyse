@@ -1,0 +1,78 @@
+---
+title: "226305 Tutorial"
+subtitle: "Ego-Netzwerke"
+author: "Swaran Sandhu"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Anleitung
+
+**Worum geht es?** Bitte erheben Sie mit einer Partner/in ein Ego-Netzwerk und erstellen in ihrem github-Account eine entsprechende Edge- und Nodelist.
+
+Bitte erstellen Sie ein entsprechendes Codebuch für folgende Attribute:
+
+**Edge-Attribute** \
+id: \
+from: \
+to: \
+weight: \
+relation:
+
+**Node-Attribute**\
+id:\
+name:\
+age:\
+education:\
+religion:
+
+**igraph-Objekt erstellen (Ego-Netzwerk)**
+
+```{r Netzwerk einlesen, fig.height=6, fig.width=10, message=FALSE, warning=TRUE, paged.print=FALSE}
+
+library(igraph)
+
+# Edge- und Nodelist vorbereiten
+el <- read.csv("https://raw.githubusercontent.com/pe028/Netzwerkanalyse/main/Ego_Netzwerk_EdgeList.csv", header=T, as.is=T, sep = ",")
+
+nodes <- read.csv("https://raw.githubusercontent.com/pe028/Netzwerkanalyse/main/Ego_Netzwerk_NodeList.csv", header=T, as.is=T, sep = ",")
+
+edgematrix <-as.matrix(el)
+
+el
+nodes
+
+#igraph Objekt erstellen
+ego <- graph_from_data_frame(d=edgematrix, vertices=nodes, directed=T)
+ego
+```
+
+
+
+
+# Netzwerkvisualisierung
+
+```{r Netzwerk visualisieren, fig.height=6, fig.width=10}
+
+plot(ego, 
+		 asp=0,
+     layout=layout_with_kk,
+     main="Ego-netzwerk",
+     sub="HdM Kürzel",
+     vertex.color="gold",
+     vertex.frame.color=NA,
+     edge.color="grey60",
+     edge.curved=.2,
+     edge.arrow.size=.2)
+```
+
+# Interpretation
+
+Bitte beantworten Sie folgende Fragen mit jeweils ein bis zwei Sätzen.
+
+1.  Was haben Sie über Ego-Netzwerke in der Erhebung gelernt?
+
+2.  Welche Punkte sind Ihnen bei ihrem eigenen Ego-Netzwerk aufgefallen?
