@@ -44,7 +44,7 @@ edgematrix <-as.matrix(el)
 
 el
 nodes
-
+`
 #igraph Objekt erstellen
 ego <- graph_from_data_frame(d=edgematrix, vertices=nodes, directed=T)
 ego
